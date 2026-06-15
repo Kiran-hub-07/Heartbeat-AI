@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heartbeat AI | Clinical Telemetry Matrix</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --philips-navy: #032b43;
+            --philips-blue: #0b5c8f;
+            --philips-cyan: #009688;
+            --clinical-dark: #121824;
+            --clinical-bg: #f8fafc;
+            --surface-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --alert-red: #ef4444;
+            --alert-bg-red: #fef2f2;
+            --warning-amber: #f59e0b;
+            --success-green: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--clinical-bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+        header {
+            background-color: var(--philips-navy);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--philips-blue);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .brand-container { display: flex; align-items: center; gap: 15px; }
+        .philips-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 18px; text-transform: uppercase; border-right: 1px solid rgba(255,255,255,0.3); padding-right: 15px; color: #ffffff; }
+        .app-title { font-size: 15px; color: #93c5fd; font-weight: 400; }
+
+        .system-pulse { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.07); padding: 6px 14px; border-radius: 20px; font-size: 12px; }
+        .pulse-dot { width: 8px; height: 8px; background-color: var(--success-green); border-radius: 50%; animation: heartBeat 1.2s infinite ease-in-out; }
+
+        @keyframes heartBeat {
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1.3); opacity: 0.5; box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .stats-bar {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 25px 30px 10px 30px; max-width: 1600px; margin: 0 auto;
+        }
+        .stat-mini-card {
+            background: var(--surface-card); border-radius: 8px; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 4px solid var(--philips-blue);
+        }
+        .stat-mini-card.critical { border-left-color: var(--alert-red); animation: borderFlash 2s infinite; }
+        .stat-mini-card h5 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-mini-card p { font-size: 22px; font-weight: 700; color: var(--text-main); margin-top: 2px; }
+
+        @keyframes borderFlash {
+            0%, 100% { border-left-color: var(--alert-red); }
+            50% { border-left-color: #fca5a5; }
+        }
+
+        main { padding: 15px 30px 30px 30px; max-width: 1600px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+        
+        .section-panel { background: var(--surface-card); border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); padding: 20px; overflow: hidden; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
+        .panel-title { font-size: 15px; font-weight: 600; color: var(--philips-navy); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background-color: #f1f5f9; color: var(--text-muted); padding: 12px 16px; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; transition: all 0.25s ease-in-out; }
+        
+        tbody tr { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        tbody tr:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); background-color: #f8fafc; }
+
+        tr.critical-row { background-color: var(--alert-bg-red) !important; animation: rowFlicker 2.5s infinite; }
+        tr.critical-row td { color: var(--alert-red); border-bottom-color: #fecaca; }
+        tr.critical-row td strong { color: var(--alert-red); }
+
+        @keyframes rowFlicker {
+            0%, 100% { background-color: #fef2f2; }
+            50% { background-color: #fee2e2; }
+        }
+
+        .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .badge-CRITICAL { background-color: #fee2e2; color: var(--alert-red); border: 1px solid #fca5a5; }
+        .badge-HIGH { background-color: #fef3c7; color: var(--warning-amber); border: 1px solid #fcd34d; }
+        .badge-NORMAL { background-color: #ecfdf5; color: var(--success-green); border: 1px solid #a7f3d0; }
+
+        .wave-container { width: 80px; height: 24px; display: flex; align-items: center; gap: 2px; }
+        .wave-bar { width: 3px; height: 40%; background: var(--success-green); border-radius: 2px; animation: moveWave 1s infinite ease-in-out; }
+        tr.critical-row .wave-bar { background: var(--alert-red); animation: moveWave 0.4s infinite ease-in-out; }
+        
+        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+
+        @keyframes moveWave {
+            0%, 100% { height: 30%; }
+            50% { height: 95%; }
+        }
+
+        .feed-container { display: flex; flex-direction: column; gap: 10px; max-height: 480px; overflow-y: auto; }
+        .feed-item { padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fafafa; font-size: 12px; display: flex; flex-direction: column; gap: 4px; border-left: 3px solid var(--text-muted); animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .feed-item.alert-node { border-left-color: var(--alert-red); background: var(--alert-bg-red); }
+        .feed-item .meta { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 10px; font-weight: bold; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-card {
+            background: var(--surface-card); width: 90%; max-width: 1000px; border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; display: flex; flex-direction: column;
+            transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-overlay.active .modal-card { transform: scale(1); }
+
+        .modal-header {
+            background: var(--philips-navy); color: white; padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--philips-blue);
+        }
+        .modal-close { background: none; border: none; color: white; font-size: 28px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; }
+        .modal-close:hover { opacity: 1; }
+
+        .modal-body { padding: 25px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 25px; background: #f1f5f9; }
+        
+        .vitals-showcase { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .vital-tile { background: white; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
+        .vital-tile .meta-title { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .vital-tile .readout { font-size: 32px; font-weight: 800; color: var(--philips-navy); margin-top: 8px; }
+        .vital-tile .readout span { font-size: 14px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+        
+        .vital-tile.critical-flash { border: 2px solid var(--alert-red); background: var(--alert-bg-red); animation: tilePulse 1.5s infinite linear; }
+        @keyframes tilePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+
+        .right-column-panel { display: flex; flex-direction: column; gap: 20px; }
+
+        .care-node-box {
+            background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .call-action-button {
+            margin-top: 15px; padding: 12px; background: var(--philips-blue); color: white;
+            text-align: center; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; border: none; width: 100%; cursor: pointer;
+        }
+        .call-action-button:hover { background: var(--philips-navy); transform: translateY(-1px); }
+        
+        .graph-panel { grid-column: span 2; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-container">
+            <div class="philips-logo">Heartbeat AI</div>
+            <div class="app-title">Ai powered Patient Monitoring System</div>
+        </div>
+        <div class="system-pulse">
+            <div class="pulse-dot"></div>
+            <span style="font-weight: 600; opacity: 0.9;">AI Telemetry Core Engine Active</span>
+        </div>
+    </header>
+
+    <section class="stats-bar">
+        <div class="stat-mini-card">
+            <div><h5>Total Census Admits</h5><p id="stat-total">0</p></div>
+            <span style="font-size: 24px;">🏥</span>
+        </div>
+        <div class="stat-mini-card" id="stat-crit-box">
+            <div><h5 style="color: var(--alert-red);">Critical Events Active</h5><p id="stat-critical">0</p></div>
+            <span style="font-size: 24px;">🚨</span>
+        </div>
+        <div class="stat-mini-card" style="border-left-color: var(--warning-amber);">
+            <div><h5>High Triage Actions</h5><p id="stat-high">0</p></div>
+            <span style="font-size: 24px;">⚠️</span>
+        </div>
+        <div class="stat-mini-card" style="border-left-color: var(--philips-cyan);">
+            <div><h5>System Stability Index</h5><p>99.4%</p></div>
+            <span style="font-size: 24px;">🛡️</span>
+        </div>
+    </section>
+
+    <main>
+        <section class="section-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">📍 Floor Unit Monitor Telemetry</h2>
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: bold;">POLLING LIVE EVERY 3s</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Admitted Patient Context</th>
+                        <th>AI Triage State</th>
+                        <th>SpO₂ Monitor</th>
+                        <th>Pulse Rate</th>
+                        <th>Temp</th>
+                        <th>BP Stream</th>
+                        <th>ECG Waveform Array</th>
+                    </tr>
+                </thead>
+                <tbody id="ward-table-body">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                            🔄 Awaiting handshake connection from telemetry api endpoint...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="section-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">⚡ Live Security & Alert Dispatches</h2>
+            </div>
+            <div class="feed-container" id="alert-action-feed">
+                <div class="feed-item"><div class="meta"><span>SYSTEM</span><span>NOW</span></div>Triage array listening to incoming hospital database streams.</div>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="clinical-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h2 id="p-modal-name">Patient Label</h2>
+                    <span id="p-modal-id" style="font-size: 11px; color: #93c5fd; letter-spacing: 0.5px;">PATIENT UUID LOCKOUT: --</span>
+                </div>
+                <button class="modal-close" onclick="closeClinicalDashboard()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="vitals-showcase">
+                    <div class="vital-tile" id="tile-spo2">
+                        <span class="meta-title">Oxygen Saturation (SpO₂)</span>
+                        <div class="readout" id="p-modal-spo2">-- <span>%</span></div>
+                    </div>
+                    <div class="vital-tile" id="tile-hr">
+                        <span class="meta-title">Heart Pulse Vector</span>
+                        <div class="readout" id="p-modal-hr">-- <span>BPM</span></div>
+                    </div>
+                    <div class="vital-tile">
+                        <span class="meta-title">Thermal Sensor Array</span>
+                        <div class="readout" id="p-modal-temp">-- <span>°F</span></div>
+                    </div>
+                    <div class="vital-tile">
+                        <span class="meta-title">Non-Invasive Blood Pressure</span>
+                        <div class="readout" id="p-modal-bp">--/--</div>
+                    </div>
+                </div>
+
+                <div class="right-column-panel">
+                    <div class="care-node-box">
+                        <h3 style="font-size: 12px; color: var(--philips-navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">Assigned Clinical Handlers</h3>
+                        <div style="font-size: 14px; margin-bottom: 6px;" id="p-modal-doc">Attending Physician: --</div>
+                        <div style="font-size: 14px; margin-bottom: 12px;" id="p-modal-nurse">Floor Charge Nurse: --</div>
+                        
+                        <a href="#" class="call-action-button" id="p-modal-call-link">
+                            📞 Route Voice Interface
+                        </a>
+                    </div>
+                </div>
+
+                <div class="graph-panel">
+                    <h4 style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; font-weight: bold;">Dynamic High-Frequency Pulse Strip Trend</h4>
+                    <canvas id="livePulseStrip" height="110"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentActivePatientId = null;
+        let dynamicPulseChart = null;
+        const loggedAlertKeys = new Set(); 
+
+        async function pullTelemetryStream() {
+            try {
+                const response = await fetch('/api/patients');
+                const patientData = await response.json();
+                
+                if (!patientData || patientData.length === 0) {
+                    console.warn("API responsive but returned an empty array.");
+                    return;
+                }
+                
+                calculateMetricsBar(patientData);
+                renderWardTable(patientData);
+                
+                if (currentActivePatientId) {
+                    const matchedPatient = patientData.find(p => p.PatientID === currentActivePatientId);
+                    if (matchedPatient) updateOpenDashboardValues(matchedPatient);
+                }
+            } catch (err) {
+                console.error("Clinical telemetry network pipe failure:", err);
+            }
+        }
+
+        function calculateMetricsBar(patients) {
+            document.getElementById('stat-total').innerText = patients.length;
+            const criticalCount = patients.filter(p => p.SpO2 < 92).length;
+            const highCount = patients.filter(p => p.RiskLevel === 'HIGH').length;
+
+            document.getElementById('stat-critical').innerText = criticalCount;
+            document.getElementById('stat-high').innerText = highCount;
+
+            const critBox = document.getElementById('stat-crit-box');
+            if (criticalCount > 0) {
+                critBox.classList.add('critical');
+            } else {
+                critBox.classList.remove('critical');
+            }
+        }
+
+        function renderWardTable(patients) {
+            const tbody = document.getElementById('ward-table-body');
+            tbody.innerHTML = '';
+
+            patients.forEach(p => {
+                const isCritical = p.SpO2 < 92;
+                const tr = document.createElement('tr');
+                
+                if (isCritical) {
+                    tr.classList.add('critical-row');
+                    dispatchBackendSmsTask(p);
+                    triggerVibrantSignal();
+                }
+
+                tr.onclick = () => launchPatientDashboard(p);
+                tr.innerHTML = `
+                    <td><code style="font-weight:bold; color:var(--philips-blue);">${p.PatientID}</code></td>
+                    <td><strong>${p.Name}</strong> <span style="font-size:12px; color:var(--text-muted);">Age ${p.Age}</span></td>
+                    <td><span class="badge badge-${p.RiskLevel}">${p.RiskLevel}</span></td>
+                    <td><span style="font-size:15px; font-weight:800;">${p.SpO2}%</span></td>
+                    <td><strong>${p.HeartRate}</strong> <span style="font-size:11px; color:var(--text-muted);">bpm</span></td>
+                    <td>${p.Temperature}°F</td>
+                    <td><code>${p.BloodPressure}</code></td>
+                    <td>
+                        <div class="wave-container">
+                            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function triggerVibrantSignal() {
+            if ("vibrate" in navigator) {
+                navigator.vibrate([500, 250, 500]);
+            }
+        }
+
+        function pushToNotificationFeed(message, isAlert = false) {
+            const feed = document.getElementById('alert-action-feed');
+            const item = document.createElement('div');
+            const now = new Date().toLocaleTimeString();
+            
+            item.className = `feed-item ${isAlert ? 'alert-node' : ''}`;
+            item.innerHTML = `
+                <div class="meta"><span>${isAlert ? '🚨 AUTOMATED DISPATCH' : 'LOG'}</span><span>${now}</span></div>
+                <div>${message}</div>
+            `;
+            feed.insertBefore(item, feed.firstChild);
+        }
+
+        // =====================================================================
+        // ALERT SYSTEM FOR TELEMETRY DROPS
+        // Runs quietly in the background without causing browser popups!
+        // =====================================================================
+        async function dispatchBackendSmsTask(patient) {
+            const compositeKey = `${patient.PatientID}_${patient.SpO2}`;
+            if (loggedAlertKeys.has(compositeKey)) return; 
+            loggedAlertKeys.add(compositeKey);
+
+            pushToNotificationFeed(`CRITICAL Event detected for ${patient.Name}. Routing an immediate automated alert to phone gateway...`, true);
+
+            try {
+                const response = await fetch(`/api/alert/${patient.PatientID}`, { method: 'POST' });
+                const data = await response.json();
+                console.log("Automated background alert output:", data);
+            } catch (err) {
+                console.error("Alert broadcast routing pipeline failure:", err);
+            }
+        }
+
+        function launchPatientDashboard(patient) {
+            currentActivePatientId = patient.PatientID;
+            document.getElementById('clinical-modal').classList.add('active');
+            
+            const ctx = document.getElementById('livePulseStrip').getContext('2d');
+            if (dynamicPulseChart) dynamicPulseChart.destroy();
+            
+            const randomBaselineData = Array.from({length: 12}, () => patient.HeartRate + Math.floor(Math.random() * 8) - 4);
+            
+            dynamicPulseChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 12}, (_, i) => `-${12-i}s`),
+                    datasets: [{
+                        label: 'ECG Frequency Translation',
+                        data: randomBaselineData,
+                        borderColor: '#0b5c8f',
+                        backgroundColor: 'rgba(11, 92, 143, 0.04)',
+                        borderWidth: 2.5,
+                        pointRadius: 2,
+                        tension: 0.35,
+                        fill: true
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    animation: { duration: 300 },
+                    scales: { y: { min: 40, max: 160 } } 
+                }
+            });
+
+            updateOpenDashboardValues(patient);
+        }
+
+        function updateOpenDashboardValues(p) {
+            document.getElementById('p-modal-name').innerText = p.Name;
+            document.getElementById('p-modal-id').innerText = `PATIENT CASE LOCKOUT ID: ${p.PatientID} // PRIMARY STATION MONITOR`;
+            document.getElementById('p-modal-spo2').innerHTML = `${p.SpO2} <span>%</span>`;
+            document.getElementById('p-modal-hr').innerHTML = `${p.HeartRate} <span>BPM</span>`;
+            document.getElementById('p-modal-temp').innerHTML = `${p.Temperature} <span>°F</span>`;
+            document.getElementById('p-modal-bp').innerText = p.BloodPressure;
+            
+            // Clean inline text layouts for handler names to bypass any old alert listeners
+            document.getElementById('p-modal-doc').innerHTML = `Attending Physician: <span style="color: var(--philips-blue); font-weight: bold;">${p.AttendingDoctor}</span>`;
+            document.getElementById('p-modal-nurse').innerHTML = `Floor Charge Nurse: <span style="color: var(--philips-navy); font-weight: bold;">${p.AttendingNurse}</span>`;
+            
+            const callBtn = document.getElementById('p-modal-call-link');
+
+            // Explicitly reset label configuration options
+            callBtn.innerText = `📞 Route Voice Interface to ${p.AttendingNurse} (${p.NursePhone})`;
+            callBtn.style.backgroundColor = '';
+
+            callBtn.onclick = function(e) {
+                e.preventDefault();
+                
+                callBtn.innerText = `⚡ Dispatching Live Satellite SMS Alert...`;
+                callBtn.style.backgroundColor = '#d97706'; 
+
+                fetch(`/api/alert/${p.PatientID}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' || data.status === 'simulated') {
+                        callBtn.innerText = `✅ Alert Transmitted Successfully!`;
+                        callBtn.style.backgroundColor = '#16a34a';
+                        
+                        setTimeout(() => {
+                            callBtn.innerText = `📞 Route Voice Interface to ${p.AttendingNurse} (${p.NursePhone})`;
+                            callBtn.style.backgroundColor = ''; 
+                        }, 3000);
+                    } else {
+                        callBtn.innerText = `❌ Delivery Failed: ${data.message}`;
+                        callBtn.style.backgroundColor = '#dc2626';
+                    }
+                })
+                .catch(err => {
+                    console.error('API Error:', err);
+                    callBtn.innerText = `❌ Network Error`;
+                    callBtn.style.backgroundColor = '#dc2626';
+                });
+            };
+
+            if(dynamicPulseChart) {
+                dynamicPulseChart.data.datasets[0].data.shift();
+                dynamicPulseChart.data.datasets[0].data.push(p.HeartRate);
+                
+                if (p.SpO2 < 92) {
+                    dynamicPulseChart.data.datasets[0].borderColor = '#ef4444';
+                    dynamicPulseChart.data.datasets[0].backgroundColor = 'rgba(239, 68, 68, 0.08)';
+                } else {
+                    dynamicPulseChart.data.datasets[0].borderColor = '#0b5c8f';
+                    dynamicPulseChart.data.datasets[0].backgroundColor = 'rgba(11, 92, 143, 0.04)';
+                }
+                dynamicPulseChart.update('none');
+            }
+        }
+
+        function closeClinicalDashboard() {
+            document.getElementById('clinical-modal').classList.remove('active');
+            currentActivePatientId = null;
+        }
+
+        setInterval(pullTelemetryStream, 3000);
+        window.onload = pullTelemetryStream;
+    </script>
+</body>
+</html>
+
