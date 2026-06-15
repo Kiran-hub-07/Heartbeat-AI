@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CareSync AI - Hospital Intelligence Platform</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0a0f1e;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+:root{--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--purple:#a855f7;--teal:#14b8a6;--card:#111827;--border:#1e2a3a;--text2:#94a3b8}
+.header{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:1px solid #1e2a3a;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;color:#fff}
+.logo span{background:linear-gradient(135deg,#3b82f6,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.status-bar{display:flex;align-items:center;gap:16px;font-size:12px;color:#94a3b8}
+.pulse{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.layout{display:grid;grid-template-columns:220px 1fr 300px;height:calc(100vh - 56px)}
+.sidebar{background:#0d1117;border-right:1px solid #1e2a3a;padding:16px 12px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:#94a3b8;margin-bottom:4px;transition:all 0.2s}
+.nav-item:hover{background:#1e2a3a;color:#e2e8f0}
+.nav-item.active{background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(168,85,247,0.2));color:#3b82f6;border:1px solid rgba(59,130,246,0.3)}
+.nav-item i{font-size:16px}
+.main{overflow-y:auto;padding:16px}
+.right-panel{background:#0d1117;border-left:1px solid #1e2a3a;display:flex;flex-direction:column}
+.panel-header{padding:14px 16px;border-bottom:1px solid #1e2a3a;font-size:13px;font-weight:600;color:#94a3b8;letter-spacing:0.05em;text-transform:uppercase}
+.section-title{font-size:15px;font-weight:600;color:#e2e8f0;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.card{background:#111827;border:1px solid #1e2a3a;border-radius:12px;padding:14px}
+.card.critical{border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.05)}
+.card.warning{border-color:rgba(245,158,11,0.5);background:rgba(245,158,11,0.05)}
+.card.stable{border-color:rgba(34,197,94,0.3)}
+.metric-val{font-size:26px;font-weight:700;line-height:1}
+.metric-label{font-size:11px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.badge-red{background:rgba(239,68,68,0.15);color:#ef4444}
+.badge-green{background:rgba(34,197,94,0.15);color:#22c55e}
+.badge-amber{background:rgba(245,158,11,0.15);color:#f59e0b}
+.badge-blue{background:rgba(59,130,246,0.15);color:#3b82f6}
+.badge-purple{background:rgba(168,85,247,0.15);color:#a855f7}
+.patient-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#0d1117;border:1px solid #1e2a3a;border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all 0.2s}
+.patient-row:hover{border-color:#3b82f6;background:#111827}
+.patient-row.selected{border-color:#3b82f6;background:rgba(59,130,246,0.08)}
+.vital-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0d1117}
+.vital-name{font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:6px}
+.vital-val{font-size:14px;font-weight:600}
+.bar-outer{background:#0d1117;border-radius:4px;height:6px;overflow:hidden;flex:1;margin:0 10px}
+.bar-inner{height:100%;border-radius:4px;transition:width 1s ease}
+.prediction-box{background:#0d1117;border:1px solid #1e2a3a;border-radius:10px;padding:12px;margin-bottom:10px}
+.predict-val{font-size:32px;font-weight:800;background:linear-gradient(135deg,#ef4444,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.timeline-item{display:flex;gap:10px;margin-bottom:12px}
+.timeline-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.timeline-text{font-size:12px;color:#94a3b8;line-height:1.5}
+.xai-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px}
+.xai-bar{height:8px;border-radius:4px;min-width:20px;transition:width 1s ease}
+.chat-area{flex:1;overflow-y:auto;padding:12px}
+.chat-msg{margin-bottom:12px}
+.chat-bubble{padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5;max-width:90%}
+.user-bubble{background:linear-gradient(135deg,rgba(59,130,246,0.3),rgba(168,85,247,0.3));border:1px solid rgba(59,130,246,0.3);margin-left:auto}
+.ai-bubble{background:#1e2a3a;border:1px solid #2d3a4a}
+.chat-input-row{padding:10px;border-top:1px solid #1e2a3a;display:flex;gap:8px}
+.chat-input{flex:1;background:#1e2a3a;border:1px solid #2d3a4a;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;outline:none}
+.chat-input::placeholder{color:#475569}
+.btn-send{background:linear-gradient(135deg,#3b82f6,#a855f7);border:none;border-radius:8px;padding:8px 14px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.btn-send:hover{opacity:0.9}
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;background:#0d1117;border-radius:10px;padding:4px}
+.tab{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:#94a3b8;transition:all 0.2s;flex:1;text-align:center}
+.tab.active{background:linear-gradient(135deg,#1e3a5f,#2d1b4e);color:#e2e8f0}
+.nurse-card{background:#0d1117;border:1px solid #1e2a3a;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.life-score{text-align:center;padding:16px}
+.life-score-val{font-size:52px;font-weight:800;background:linear-gradient(135deg,#22c55e,#14b8a6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.story-time{font-size:11px;color:#3b82f6;font-weight:600;margin-bottom:2px}
+.story-event{font-size:12px;color:#94a3b8}
+.thinking{display:flex;align-items:center;gap:6px;color:#94a3b8;font-size:12px;font-style:italic}
+.dot-anim{display:flex;gap:3px}
+.dot-anim span{width:5px;height:5px;border-radius:50%;background:#3b82f6;animation:dots 1.2s infinite}
+.dot-anim span:nth-child(2){animation-delay:0.2s}
+.dot-anim span:nth-child(3){animation-delay:0.4s}
+@keyframes dots{0%,60%,100%{opacity:0.2}30%{opacity:1}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <i class="ti ti-heartbeat" style="color:#ef4444;font-size:22px"></i>
+    <span>CareSync AI</span>
+    <span style="-webkit-text-fill-color:#64748b;font-size:12px;font-weight:400;margin-left:4px">Hospital Intelligence Platform</span>
+  </div>
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px"><div class="pulse"></div><span>Live Monitoring</span></div>
+    <span>|</span>
+    <span id="clock">00:00:00</span>
+    <span>|</span>
+    <span>12 Patients · 3 Critical</span>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div style="font-size:10px;color:#475569;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">Navigation</div>
+    <div class="nav-item active" onclick="showTab('dashboard')"><i class="ti ti-layout-dashboard"></i>Command Center</div>
+    <div class="nav-item" onclick="showTab('prediction')"><i class="ti ti-brain"></i>Emergency Prediction</div>
+    <div class="nav-item" onclick="showTab('allocation')"><i class="ti ti-users"></i>Auto Allocation</div>
+    <div class="nav-item" onclick="showTab('xai')"><i class="ti ti-microscope"></i>Explainable AI</div>
+    <div class="nav-item" onclick="showTab('twin')"><i class="ti ti-dna"></i>Digital Twin</div>
+    <div class="nav-item" onclick="showTab('story')"><i class="ti ti-book"></i>AI Medical Story</div>
+    <div class="nav-item" onclick="showTab('lifescore')"><i class="ti ti-heart"></i>Life Score</div>
+    <div class="nav-item" onclick="showTab('outbreak')"><i class="ti ti-virus"></i>Outbreak Detector</div>
+    <div class="nav-item" onclick="showTab('resources')"><i class="ti ti-chart-bar"></i>Resource Predictor</div>
+
+    <div style="font-size:10px;color:#475569;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin:16px 0 10px">Patients</div>
+    <div id="patient-list"></div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main" id="main-content"></div>
+
+  <!-- RIGHT PANEL: AI CHAT -->
+  <div class="right-panel">
+    <div class="panel-header"><i class="ti ti-robot" style="font-size:14px;margin-right:6px"></i>CareSync GPT</div>
+    <div class="chat-area" id="chat-area">
+      <div class="chat-msg">
+        <div class="ai-bubble chat-bubble">
+          <strong style="color:#3b82f6">CareSync AI</strong> online.<br>
+          Ask me about any patient, vital trends, risk scores, or request staff allocation. Try:<br>
+          <span style="color:#94a3b8">"Why is Patient 103 deteriorating?"<br>"Assign staff to critical patients"<br>"Show ICU bed forecast"</span>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input" placeholder="Ask CareSync AI..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn-send" onclick="sendChat()"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+
+// ── Patient Data ──────────────────────────────────────────
+const PATIENTS = [
+  {id:103,name:"Aarav Mehta",age:67,ward:"ICU",status:"critical",spo2:85,hr:128,temp:39.2,bp:"145/95",rr:24,score:92,risk:0.85,history:["Pneumonia","Hypertension"],trend:"down",nurse:"Nurse A",doctor:"Dr. Singh",eta:2},
+  {id:207,name:"Priya Nair",age:54,ward:"ICU",status:"warning",spo2:91,hr:104,temp:38.1,bp:"130/85",rr:19,score:68,risk:0.54,history:["COPD"],trend:"down",nurse:"Nurse B",doctor:"Dr. Patel",eta:5},
+  {id:312,name:"Ravi Kumar",age:72,ward:"Ward B",status:"stable",spo2:97,hr:78,temp:37.1,bp:"120/80",rr:15,score:22,risk:0.12,history:["Diabetes"],trend:"stable",nurse:"Nurse C",doctor:"Dr. Rao",eta:12},
+  {id:415,name:"Sunita Das",age:48,ward:"Ward C",status:"stable",spo2:98,hr:72,temp:36.8,bp:"118/76",rr:14,score:15,risk:0.08,history:["Post-surgery"],trend:"up",nurse:"Nurse D",doctor:"Dr. Kapoor",eta:15},
+  {id:521,name:"Mohan Iyer",age:81,ward:"ICU",status:"critical",spo2:83,hr:135,temp:39.8,bp:"160/100",rr:26,score:96,risk:0.91,history:["Heart failure","COPD"],trend:"down",nurse:"Nurse A",doctor:"Dr. Singh",eta:1},
+];
+
+let selectedPatient = PATIENTS[0];
+let currentTab = "dashboard";
+
+// ── Clock ─────────────────────────────────────────────────
+function formatTime(){
+  const n=new Date();
+  return [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+}
+setInterval(()=>{ document.getElementById('clock').textContent=formatTime(); },1000);
+
+// ── Sidebar ───────────────────────────────────────────────
+function renderSidebar(){
+  document.getElementById('patient-list').innerHTML = PATIENTS.map(p=>`
+    <div class="patient-row ${p.id===selectedPatient.id?'selected':''}" onclick="selectPatient(${p.id})">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#e2e8f0">${p.name.split(' ')[0]}</div>
+        <div style="font-size:11px;color:#64748b">Rm ${p.id} · ${p.ward}</div>
+      </div>
+      <span class="badge ${p.status==='critical'?'badge-red':p.status==='warning'?'badge-amber':'badge-green'}">${p.status}</span>
+    </div>`).join('');
+}
+
+function selectPatient(id){
+  selectedPatient = PATIENTS.find(p=>p.id===id);
+  renderSidebar();
+  showTab(currentTab);
+}
+
+// ── Tab Router ────────────────────────────────────────────
+function showTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const tabs=['dashboard','prediction','allocation','xai','twin','story','lifescore','outbreak','resources'];
+  const el = document.querySelectorAll('.nav-item')[tabs.indexOf(tab)];
+  if(el) el.classList.add('active');
+  const main = document.getElementById('main-content');
+  const map = {dashboard:renderDashboard,prediction:renderPrediction,allocation:renderAllocation,xai:renderXAI,twin:renderTwin,story:renderStory,lifescore:renderLifeScore,outbreak:renderOutbreak,resources:renderResources};
+  if(map[tab]) main.innerHTML = map[tab]();
+  animateBars();
+}
+
+// ── Animate Bars ──────────────────────────────────────────
+function animateBars(){
+  setTimeout(()=>{
+    document.querySelectorAll('.bar-inner').forEach(b=>{
+      const w=b.style.width; b.style.width='0';
+      setTimeout(()=>{ b.style.width=w; },50);
+    });
+  },100);
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 1 — COMMAND CENTER DASHBOARD
+// ════════════════════════════════════════════════════════
+function renderDashboard(){
+  const crit=PATIENTS.filter(p=>p.status==='critical').length;
+  const warn=PATIENTS.filter(p=>p.status==='warning').length;
+  const stable=PATIENTS.filter(p=>p.status==='stable').length;
+  return `
+  <div class="section-title"><i class="ti ti-layout-dashboard" style="color:#3b82f6"></i>Hospital Command Center</div>
+  <div class="grid-4">
+    <div class="card"><div class="metric-val" style="color:#ef4444">${crit}</div><div class="metric-label">Critical</div></div>
+    <div class="card"><div class="metric-val" style="color:#f59e0b">${warn}</div><div class="metric-label">Warning</div></div>
+    <div class="card"><div class="metric-val" style="color:#22c55e">${stable}</div><div class="metric-label">Stable</div></div>
+    <div class="card"><div class="metric-val" style="color:#3b82f6">5/8</div><div class="metric-label">ICU Beds Used</div></div>
+  </div>
+  <div class="grid-2">
+    <div>
+      <div class="section-title" style="font-size:13px"><i class="ti ti-users" style="color:#a855f7"></i>All Patients · Live Vitals</div>
+      ${PATIENTS.map(p=>`
+      <div class="patient-row ${p.id===selectedPatient.id?'selected':''}" onclick="selectPatient(${p.id})" style="margin-bottom:8px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:600;color:#e2e8f0">${p.name}</span>
+            <span class="badge ${p.status==='critical'?'badge-red':p.status==='warning'?'badge-amber':'badge-green'}">${p.status}</span>
+            <span style="font-size:11px;color:#64748b">Risk: ${Math.round(p.risk*100)}%</span>
+          </div>
+          <div style="display:flex;gap:12px;font-size:11px;color:#64748b">
+            <span>SpO₂ <span style="color:${p.spo2<90?'#ef4444':p.spo2<95?'#f59e0b':'#22c55e'};font-weight:600">${p.spo2}%</span></span>
+            <span>HR <span style="color:${p.hr>120?'#ef4444':'#e2e8f0'};font-weight:600">${p.hr}</span></span>
+            <span>Temp <span style="color:${p.temp>38.5?'#f59e0b':'#e2e8f0'};font-weight:600">${p.temp}°C</span></span>
+            <span>BP <span style="font-weight:600;color:#e2e8f0">${p.bp}</span></span>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#64748b">
+          <div>${p.ward}</div>
+          <div style="font-size:18px;font-weight:700;color:${p.score>80?'#ef4444':p.score>50?'#f59e0b':'#22c55e'}">${p.score}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div>
+      <div class="section-title" style="font-size:13px"><i class="ti ti-chart-bar" style="color:#14b8a6"></i>ICU Capacity & Resources</div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:12px;color:#94a3b8">ICU Beds</span><span style="font-size:12px;color:#e2e8f0;font-weight:600">5/8 Used</span>
+        </div>
+        <div class="bar-outer" style="margin:0;height:10px"><div class="bar-inner" style="width:62.5%;background:#3b82f6"></div></div>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">Nurse Workload</div>
+        ${['Nurse A','Nurse B','Nurse C','Nurse D'].map((n,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+          <span style="color:#94a3b8;width:64px">${n}</span>
+          <div class="bar-outer" style="margin:0"><div class="bar-inner" style="width:${[85,60,40,30][i]}%;background:${['#ef4444','#f59e0b','#22c55e','#22c55e'][i]}"></div></div>
+          <span style="color:#e2e8f0;font-weight:600">${[85,60,40,30][i]}%</span>
+        </div>`).join('')}
+      </div>
+      <div class="card">
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">Emergency Predictions (next 30 min)</div>
+        ${PATIENTS.filter(p=>p.risk>0.4).map(p=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:12px;padding:6px 8px;background:#0d1117;border-radius:6px">
+          <span>${p.name.split(' ')[0]}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="bar-outer" style="width:60px;margin:0"><div class="bar-inner" style="width:${Math.round(p.risk*100)}%;background:${p.risk>0.7?'#ef4444':'#f59e0b'}"></div></div>
+            <span style="color:${p.risk>0.7?'#ef4444':'#f59e0b'};font-weight:600">${Math.round(p.risk*100)}%</span>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 2 — EMERGENCY PREDICTION
+// ════════════════════════════════════════════════════════
+function renderPrediction(){
+  const p=selectedPatient;
+  const times=["15 min","30 min","45 min"];
+  const spo2pred=[p.spo2-3,p.spo2-6,p.spo2-10];
+  const hrpred=[p.hr+8,p.hr+15,p.hr+22];
+  return `
+  <div class="section-title"><i class="ti ti-brain" style="color:#a855f7"></i>Emergency Prediction Engine · ${p.name}</div>
+  <div class="grid-2">
+    <div>
+      <div class="prediction-box">
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:4px">Critical Risk in 30 min</div>
+        <div class="predict-val">${Math.round(p.risk*100)}%</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:6px">${p.risk>0.7?'⚠️ Immediate intervention recommended':'Monitoring closely'}</div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">AI HEALTHCARE TIME MACHINE ⏳</div>
+        <div style="font-size:11px;color:#475569;margin-bottom:10px">Projected if NO action taken:</div>
+        ${times.map((t,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px">
+          <span style="color:#3b82f6;font-weight:600;width:50px">${t}</span>
+          <span style="color:#94a3b8">SpO₂</span>
+          <span style="color:${spo2pred[i]<90?'#ef4444':'#f59e0b'};font-weight:700">${spo2pred[i]}%</span>
+          <span style="color:#64748b;font-size:11px">HR: <span style="color:${hrpred[i]>130?'#ef4444':'#f59e0b'};font-weight:600">${hrpred[i]}</span></span>
+        </div>`).join('')}
+        <div style="margin-top:10px;padding:8px;background:rgba(239,68,68,0.1);border-radius:6px;border:1px solid rgba(239,68,68,0.3)">
+          <span style="font-size:12px;color:#ef4444;font-weight:600">Recommended: Immediate respiratory assessment</span>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">RISK TREND SPARKLINE</div>
+        <div style="display:flex;align-items:flex-end;gap:3px;height:50px">
+          ${[20,30,40,45,55,65,70,p.score].map(v=>`<div style="flex:1;background:linear-gradient(#ef4444,#f59e0b);border-radius:3px 3px 0 0;height:${v*0.5}px;transition:height 1s"></div>`).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#475569;margin-top:4px"><span>-4h</span><span>Now</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">FALSE ALARM DETECTION</div>
+        <div style="padding:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:6px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:2px">✓ Alert Verified: REAL</div>
+          <div style="font-size:11px;color:#94a3b8">Cross-checked with 3 sensors · Consistent readings</div>
+        </div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:6px">Last false alarms suppressed:</div>
+        <div style="font-size:12px;padding:6px;background:#0d1117;border-radius:6px;margin-bottom:4px;color:#64748b">Rm 312: Sensor slip detected · Suppressed 3 alerts</div>
+        <div style="font-size:12px;padding:6px;background:#0d1117;border-radius:6px;color:#64748b">Rm 415: Patient moved hand · Motion artifact filtered</div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">VITALS FORECAST (All Patients)</div>
+        ${PATIENTS.map(p=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #0d1117;font-size:12px">
+          <span style="color:#e2e8f0">${p.name.split(' ')[0]} ${p.name.split(' ')[1][0]}.</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="bar-outer" style="width:80px;margin:0"><div class="bar-inner" style="width:${Math.round(p.risk*100)}%;background:${p.risk>0.7?'#ef4444':p.risk>0.4?'#f59e0b':'#22c55e'}"></div></div>
+            <span class="badge ${p.risk>0.7?'badge-red':p.risk>0.4?'badge-amber':'badge-green'}">${Math.round(p.risk*100)}%</span>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 3 — AUTO STAFF ALLOCATION
+// ════════════════════════════════════════════════════════
+function renderAllocation(){
+  const crit=PATIENTS.filter(p=>p.status==='critical'||p.status==='warning');
+  const staff=[
+    {n:'Nurse A',status:'Assigned',load:85,color:'#ef4444'},
+    {n:'Nurse B',status:'Assigned',load:60,color:'#f59e0b'},
+    {n:'Nurse C',status:'Available',load:40,color:'#22c55e'},
+    {n:'Nurse D',status:'Available',load:30,color:'#22c55e'},
+    {n:'Dr. Singh',status:'On Call',load:90,color:'#ef4444'},
+    {n:'Dr. Patel',status:'Available',load:55,color:'#f59e0b'},
+    {n:'Dr. Rao',status:'Available',load:35,color:'#22c55e'},
+    {n:'Dr. Kapoor',status:'Available',load:20,color:'#22c55e'}
+  ];
+  return `
+  <div class="section-title"><i class="ti ti-users" style="color:#22c55e"></i>Auto Staff Allocation · AI Dispatcher</div>
+  <div class="grid-2">
+    <div>
+      ${crit.map(p=>`
+      <div class="card ${p.status==='critical'?'critical':'warning'}" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <span style="font-size:14px;font-weight:700;color:#e2e8f0">Patient ${p.id} — ${p.name}</span>
+            <span class="badge ${p.status==='critical'?'badge-red':'badge-amber'}" style="margin-left:8px">${p.status.toUpperCase()}</span>
+          </div>
+          <span style="font-size:22px;font-weight:800;color:${p.score>80?'#ef4444':'#f59e0b'}">${p.score}</span>
+        </div>
+        <div style="border:1px dashed ${p.status==='critical'?'rgba(239,68,68,0.4)':'rgba(245,158,11,0.4)'};border-radius:8px;padding:10px;background:rgba(0,0,0,0.2)">
+          <div style="font-size:11px;color:#64748b;margin-bottom:6px">AI AUTO-ASSIGNED ↓</div>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <div style="flex:1;background:#0d1117;border-radius:6px;padding:8px;border:1px solid #1e2a3a">
+              <div style="font-size:11px;color:#3b82f6;font-weight:600">NURSE</div>
+              <div style="font-size:13px;font-weight:700;color:#e2e8f0">${p.nurse}</div>
+              <div style="font-size:11px;color:#22c55e">ETA: ${p.eta} min · Available</div>
+            </div>
+            <div style="flex:1;background:#0d1117;border-radius:6px;padding:8px;border:1px solid #1e2a3a">
+              <div style="font-size:11px;color:#a855f7;font-weight:600">DOCTOR</div>
+              <div style="font-size:13px;font-weight:700;color:#e2e8f0">${p.doctor}</div>
+              <div style="font-size:11px;color:#22c55e">ETA: ${p.eta+3} min · On call</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#64748b;padding:6px;background:#0d1117;border-radius:4px">
+            AI Reason: SpO₂ ${p.spo2}% · HR ${p.hr} · Score ${p.score}/100
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">STAFF AVAILABILITY</div>
+        ${staff.map(s=>`
+        <div class="nurse-card">
+          <div class="avatar" style="background:rgba(59,130,246,0.15);color:#3b82f6">${s.n.split(' ').map(x=>x[0]).join('')}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0">${s.n}</div>
+            <div class="bar-outer" style="margin:4px 0 0;height:4px"><div class="bar-inner" style="width:${s.load}%;background:${s.color}"></div></div>
+          </div>
+          <span class="badge ${s.status==='Assigned'?'badge-amber':s.status==='On Call'?'badge-red':'badge-green'}">${s.status}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 4 — EXPLAINABLE AI + BLACK BOX
+// ════════════════════════════════════════════════════════
+function renderXAI(){
+  const p=selectedPatient;
+  const factors=[
+    {label:`SpO₂ dropped ${p.spo2+13}% → ${p.spo2}%`,val:35,color:'#ef4444'},
+    {label:`Heart rate increased ${Math.round((p.hr-75)/75*100)}%`,val:28,color:'#f59e0b'},
+    {label:`History: ${p.history.join(', ')}`,val:20,color:'#a855f7'},
+    {label:`Respiratory rate elevated (${p.rr}/min)`,val:12,color:'#3b82f6'},
+    {label:`Temperature: ${p.temp}°C`,val:5,color:'#14b8a6'},
+  ];
+  return `
+  <div class="section-title"><i class="ti ti-microscope" style="color:#a855f7"></i>Explainable AI · ${p.name}</div>
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:12px;font-weight:600;color:#94a3b8">CRITICAL SCORE</span>
+          <div style="font-size:40px;font-weight:800;color:${p.score>80?'#ef4444':p.score>50?'#f59e0b':'#22c55e'}">${p.score}</div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">WHY IS THIS SCORE ${p.score}?</div>
+        ${factors.map(f=>`
+        <div class="xai-item">
+          <div style="width:8px;height:8px;border-radius:50%;background:${f.color};flex-shrink:0"></div>
+          <span style="color:#94a3b8;flex:1">${f.label}</span>
+          <div class="bar-outer" style="width:120px;margin:0"><div class="bar-inner" style="width:${f.val*3}px;background:${f.color}"></div></div>
+          <span style="color:#e2e8f0;font-weight:600;font-size:11px;width:32px;text-align:right">${f.val}%</span>
+        </div>`).join('')}
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">AI SHADOW DOCTOR 👨‍⚕️</div>
+        <div style="font-size:12px;color:#e2e8f0;line-height:1.6">
+          <div style="margin-bottom:6px"><span style="color:#3b82f6">What changed?</span> SpO₂ fell 13 points over 2 hours. Heart rate climbed from baseline 80 to ${p.hr}.</div>
+          <div style="margin-bottom:6px"><span style="color:#a855f7">Why deteriorating?</span> History of ${p.history[0]} causing reduced alveolar gas exchange. Current tachycardia suggests compensatory response.</div>
+          <div><span style="color:#22c55e">Check first:</span> Airway patency, oxygen delivery, arterial blood gas, chest auscultation.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">LIVE VITALS BREAKDOWN</div>
+        ${[
+          {name:'SpO₂',val:p.spo2+'%',normal:'95–100%',pct:p.spo2,color:p.spo2<90?'#ef4444':p.spo2<95?'#f59e0b':'#22c55e'},
+          {name:'Heart Rate',val:p.hr+' bpm',normal:'60–100 bpm',pct:Math.min(p.hr/2,100),color:p.hr>100?'#ef4444':'#22c55e'},
+          {name:'Temperature',val:p.temp+'°C',normal:'36.5–37.5°C',pct:((p.temp-35)/7)*100,color:p.temp>38?'#f59e0b':'#22c55e'},
+          {name:'Resp Rate',val:p.rr+' /min',normal:'12–20 /min',pct:(p.rr/30)*100,color:p.rr>20?'#f59e0b':'#22c55e'},
+        ].map(v=>`
+        <div class="vital-row">
+          <span class="vital-name" style="width:90px">${v.name}</span>
+          <span class="vital-val" style="color:${v.color};width:70px">${v.val}</span>
+          <div class="bar-outer"><div class="bar-inner" style="width:${Math.round(v.pct)}%;background:${v.color}"></div></div>
+          <span style="font-size:10px;color:#475569;width:90px;text-align:right">Normal: ${v.normal}</span>
+        </div>`).join('')}
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">HOSPITAL BLACK BOX ✈️</div>
+        ${[
+          {t:"08:15",e:"SpO₂ dropped below 90%",c:"#ef4444"},
+          {t:"08:22",e:"AI detected abnormal breathing pattern",c:"#a855f7"},
+          {t:"08:24",e:"Alert sent to nursing station",c:"#3b82f6"},
+          {t:"08:27",e:"Nurse A responded to Room "+p.id,c:"#22c55e"},
+          {t:"08:30",e:"Dr. Singh consulted on case",c:"#14b8a6"},
+          {t:"08:35",e:"Oxygen supplemented · Vitals improving",c:"#22c55e"},
+        ].map(e=>`
+        <div class="timeline-item">
+          <div class="timeline-dot" style="background:${e.c}"></div>
+          <div><div style="font-size:11px;color:${e.c};font-weight:600">${e.t} AM</div><div class="timeline-text">${e.e}</div></div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 5 — DIGITAL TWIN + RECOVERY COACH
+// ════════════════════════════════════════════════════════
+function renderTwin(){
+  const p=selectedPatient;
+  const params=[
+    {name:'Heart Rate',expected:(p.hr-45)+'–'+(p.hr-40),current:p.hr,unit:'bpm',dev:Math.round((p.hr-82)/82*100)},
+    {name:'SpO₂',expected:'95–98',current:p.spo2,unit:'%',dev:Math.round((p.spo2-96)/96*100)},
+    {name:'Temperature',expected:'36.5–37.5',current:p.temp,unit:'°C',dev:Math.round((p.temp-37)/37*100)},
+    {name:'Resp Rate',expected:'12–16',current:p.rr,unit:'/min',dev:Math.round((p.rr-14)/14*100)},
+  ];
+  return `
+  <div class="section-title"><i class="ti ti-dna" style="color:#14b8a6"></i>AI Digital Twin · ${p.name}</div>
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">PATIENT CLONE COMPARISON 🧬</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="flex:1;background:#0d1117;border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(59,130,246,0.3)">
+            <div style="font-size:11px;color:#3b82f6;font-weight:600;margin-bottom:4px">VIRTUAL TWIN</div>
+            <div style="font-size:12px;color:#94a3b8">Learned baseline</div>
+            <div style="font-size:12px;color:#94a3b8">from past 30 days</div>
+          </div>
+          <div style="display:flex;align-items:center;font-size:18px;color:#a855f7">⟷</div>
+          <div style="flex:1;background:#0d1117;border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(239,68,68,0.3)">
+            <div style="font-size:11px;color:#ef4444;font-weight:600;margin-bottom:4px">REAL PATIENT</div>
+            <div style="font-size:12px;color:#94a3b8">Current live</div>
+            <div style="font-size:12px;color:#94a3b8">sensor readings</div>
+          </div>
+        </div>
+        ${params.map(param=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0d1117;font-size:12px">
+          <span style="color:#94a3b8;width:110px">${param.name}</span>
+          <span style="color:#3b82f6;font-size:11px;width:80px">Exp: ${param.expected}</span>
+          <span style="color:${Math.abs(param.dev)>20?'#ef4444':'#f59e0b'};font-weight:600;width:70px">Now: ${param.current}${param.unit}</span>
+          <span style="color:${Math.abs(param.dev)>20?'#ef4444':'#f59e0b'};font-size:11px">${param.dev>0?'+':''}${param.dev}%</span>
+        </div>`).join('')}
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">ANOMALY SUMMARY</div>
+        <div style="padding:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:8px">
+          <div style="font-size:13px;font-weight:700;color:#ef4444;margin-bottom:4px">⚠ Anomaly Detected</div>
+          <div style="font-size:12px;color:#94a3b8">SpO₂ deviation: -${Math.round((96-p.spo2)/96*100)}% from twin baseline</div>
+          <div style="font-size:12px;color:#94a3b8">Heart rate deviation: +${Math.round((p.hr-82)/82*100)}% from twin baseline</div>
+          <div style="font-size:12px;color:#ef4444;margin-top:6px;font-weight:600">Risk: INCREASING</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">AI RECOVERY COACH 🌱</div>
+        <div style="text-align:center;padding:12px">
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">Recovery Probability</div>
+          <div style="font-size:40px;font-weight:800;color:${p.risk>0.7?'#ef4444':p.risk>0.4?'#f59e0b':'#22c55e'}">${100-Math.round(p.risk*70)}%</div>
+          <div style="font-size:12px;color:#94a3b8;margin:8px 0">Expected Discharge</div>
+          <div style="font-size:18px;font-weight:700;color:#3b82f6">${p.risk>0.7?'7–10 Days':p.risk>0.4?'3–5 Days':'1–2 Days'}</div>
+          <div style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;border-radius:20px;background:${p.trend==='down'?'rgba(239,68,68,0.15)':'rgba(34,197,94,0.15)'};color:${p.trend==='down'?'#ef4444':'#22c55e'}">
+            <i class="ti ti-trending-${p.trend==='down'?'down':'up'}"></i>
+            Recovery Trend: ${p.trend==='down'?'Declining':'Improving'}
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">TWIN LEARNING LOG</div>
+        <div style="font-size:12px;color:#64748b;line-height:1.8">
+          <div>• Normal resting HR: <span style="color:#3b82f6">${p.hr-45}–${p.hr-40} bpm</span></div>
+          <div>• Typical SpO₂: <span style="color:#3b82f6">95–98%</span></div>
+          <div>• Daily sleep pattern: <span style="color:#3b82f6">22:00–06:00</span></div>
+          <div>• Meals: <span style="color:#3b82f6">08:00, 13:00, 19:00</span></div>
+          <div>• Known triggers: <span style="color:#f59e0b">${p.history.join(', ')}</span></div>
+          <div>• Baseline temp: <span style="color:#3b82f6">36.7°C</span></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 6 — AI MEDICAL STORY
+// ════════════════════════════════════════════════════════
+function renderStory(){
+  const p=selectedPatient;
+  const events=[
+    {t:"06:00 AM",e:"Patient admitted to "+p.ward,c:"#3b82f6",icon:"ti-door-enter"},
+    {t:"07:45 AM",e:"Baseline vitals recorded: SpO₂ "+(p.spo2+13)+"%, HR "+(p.hr-48),c:"#22c55e",icon:"ti-activity"},
+    {t:"08:12 AM",e:"SpO₂ began declining — AI twin flagged deviation",c:"#a855f7",icon:"ti-brain"},
+    {t:"08:22 AM",e:"SpO₂ hit "+p.spo2+"% · Predictive alert triggered ("+Math.round(p.risk*100)+"% risk)",c:"#f59e0b",icon:"ti-alert-triangle"},
+    {t:"08:24 AM",e:"Alert dispatched to "+p.nurse+" and "+p.doctor,c:"#3b82f6",icon:"ti-send"},
+    {t:"08:27 AM",e:p.nurse+" arrived (ETA "+p.eta+" min). Oxygen delivered.",c:"#22c55e",icon:"ti-user-check"},
+    {t:"08:33 AM",e:p.doctor+" assessed patient. Adjusted medications.",c:"#14b8a6",icon:"ti-stethoscope"},
+    {t:"08:45 AM",e:"SpO₂ recovering to "+(p.spo2+6)+"%. Risk dropped to 42%.",c:"#22c55e",icon:"ti-trending-up"},
+  ];
+  return `
+  <div class="section-title"><i class="ti ti-book" style="color:#f59e0b"></i>AI Medical Story Generator · ${p.name}</div>
+  <div class="grid-2">
+    <div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:14px">PATIENT JOURNEY TODAY</div>
+        <div style="position:relative;padding-left:20px">
+          <div style="position:absolute;left:4px;top:0;bottom:0;width:1px;background:#1e2a3a"></div>
+          ${events.map(ev=>`
+          <div style="position:relative;margin-bottom:16px">
+            <div style="position:absolute;left:-20px;top:1px;width:10px;height:10px;border-radius:50%;background:${ev.c};border:2px solid #0a0f1e"></div>
+            <div class="story-time">${ev.t}</div>
+            <div style="font-size:12px;color:#e2e8f0;display:flex;align-items:center;gap:6px">
+              <i class="ti ${ev.icon}" style="color:${ev.c};font-size:13px"></i>${ev.e}
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">AI AUTO-GENERATED SUMMARY</div>
+        <div style="font-size:12px;color:#94a3b8;line-height:1.7">
+          Patient <strong style="color:#e2e8f0">${p.name}</strong>, ${p.age}yr, was admitted to ${p.ward} with history of ${p.history.join(' & ')}.
+          At 08:12 AM, the AI Digital Twin detected a SpO₂ deviation from baseline.
+          The Emergency Prediction engine flagged a ${Math.round(p.risk*100)}% risk of critical deterioration within 30 minutes.
+          Staff were auto-dispatched. Intervention was administered and patient condition stabilized.
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">RESPONSE METRICS</div>
+        ${[
+          {label:'AI Alert Time',val:'08:22 AM'},
+          {label:'Staff Notified In',val:p.eta+' min'},
+          {label:'Response Time',val:'4 min 32 sec'},
+          {label:'Stabilization Time',val:'23 minutes'},
+          {label:'False Alarms Suppressed',val:'3'},
+        ].map(m=>`
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #0d1117;font-size:12px">
+          <span style="color:#94a3b8">${m.label}</span>
+          <span style="color:#e2e8f0;font-weight:600">${m.val}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 7 — PATIENT LIFE SCORE
+// ════════════════════════════════════════════════════════
+function renderLifeScore(){
+  const p=selectedPatient;
+  const score=100-p.score;
+  const dims=[
+    {label:'Breathing',val:p.spo2>94?'Good':p.spo2>88?'Fair':'Poor',icon:'ti-lungs',color:p.spo2>94?'#22c55e':p.spo2>88?'#f59e0b':'#ef4444'},
+    {label:'Heart',val:p.hr<100?'Stable':'Elevated',icon:'ti-heart',color:p.hr<100?'#22c55e':'#ef4444'},
+    {label:'Temperature',val:p.temp<38?'Normal':p.temp<39?'Mild Fever':'High Fever',icon:'ti-thermometer',color:p.temp<38?'#22c55e':p.temp<39?'#f59e0b':'#ef4444'},
+    {label:'Resp Rate',val:p.rr<20?'Normal':'Elevated',icon:'ti-wave-square',color:p.rr<20?'#22c55e':'#f59e0b'},
+  ];
+  return `
+  <div class="section-title"><i class="ti ti-heart" style="color:#ef4444"></i>Patient Life Stability Score · ${p.name}</div>
+  <div class="grid-2">
+    <div>
+      <div class="card" style="text-align:center;margin-bottom:12px">
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;letter-spacing:0.1em;font-weight:600">LIFE SCORE</div>
+        <div style="font-size:72px;font-weight:900;background:linear-gradient(135deg,${score>70?'#22c55e':'#ef4444'},${score>70?'#14b8a6':'#f59e0b'});-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1">${score}</div>
+        <div style="font-size:14px;color:#64748b;margin-bottom:16px">/ 100</div>
+        <div style="display:inline-block;padding:8px 20px;background:${score>70?'rgba(34,197,94,0.15)':score>40?'rgba(245,158,11,0.15)':'rgba(239,68,68,0.15)'};border-radius:20px;border:1px solid ${score>70?'rgba(34,197,94,0.3)':score>40?'rgba(245,158,11,0.3)':'rgba(239,68,68,0.3)'};color:${score>70?'#22c55e':score>40?'#f59e0b':'#ef4444'};font-size:14px;font-weight:700">
+          ${score>70?'Stable':score>40?'At Risk':'Critical'}
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:12px">DIMENSION SCORES</div>
+        ${dims.map(d=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <i class="ti ${d.icon}" style="color:${d.color};font-size:18px"></i>
+            <span style="font-size:13px;color:#e2e8f0">${d.label}</span>
+          </div>
+          <span class="badge" style="background:${d.color}20;color:${d.color}">${d.val}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">ALL PATIENTS LIFE SCORES</div>
+        ${PATIENTS.map(pt=>{
+          const s=100-pt.score;
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <span style="color:#e2e8f0">${pt.name}</span>
+              <span style="color:${s>70?'#22c55e':s>40?'#f59e0b':'#ef4444'};font-weight:700">${s}/100</span>
+            </div>
+            <div class="bar-outer" style="margin:0;height:8px"><div class="bar-inner" style="width:${s}%;background:${s>70?'#22c55e':s>40?'#f59e0b':'#ef4444'}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">EASY READOUT FOR FAMILIES</div>
+        <div style="background:#0d1117;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:#22c55e;line-height:1.8">
+          <div>Life Score  : <span style="color:${score>70?'#22c55e':'#ef4444'}">${score}/100</span></div>
+          ${dims.map(d=>`<div>${d.label.padEnd(11,' ')} : <span style="color:${d.color}">${d.val}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 8 — OUTBREAK DETECTOR + DIGITAL BRAIN + SIMULATOR
+// ════════════════════════════════════════════════════════
+function renderOutbreak(){
+  const wards=[
+    {w:'ICU',sym:['Fever','Cough'],risk:'High',pct:70,color:'#ef4444'},
+    {w:'Ward A',sym:['Fever'],risk:'Medium',pct:40,color:'#f59e0b'},
+    {w:'Ward B',sym:['None'],risk:'Low',pct:10,color:'#22c55e'},
+    {w:'Ward C',sym:['Cough'],risk:'Medium',pct:30,color:'#f59e0b'},
+    {w:'ER',sym:['Fever','Cough','Fatigue'],risk:'High',pct:80,color:'#ef4444'},
+  ];
+  return `
+  <div class="section-title"><i class="ti ti-virus" style="color:#22c55e"></i>AI Disease Outbreak Detector 🦠</div>
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">HOSPITAL HEATMAP · Symptom Clusters</div>
+        ${wards.map(w=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#0d1117;border-radius:8px;margin-bottom:6px;border:1px solid ${w.color}40">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0">${w.w}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px">Symptoms: ${w.sym.join(', ')}</div>
+          </div>
+          <div style="text-align:right">
+            <span class="badge" style="background:${w.color}20;color:${w.color}">${w.risk} Risk</span>
+            <div class="bar-outer" style="width:80px;margin:4px 0 0;height:6px"><div class="bar-inner" style="width:${w.pct}%;background:${w.color}"></div></div>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="card" style="border-color:rgba(239,68,68,0.4)">
+        <div style="font-size:12px;font-weight:600;color:#ef4444;margin-bottom:8px">⚠ OUTBREAK ALERT</div>
+        <div style="font-size:12px;color:#94a3b8;line-height:1.7">
+          AI detected <strong style="color:#e2e8f0">7 patients</strong> across ICU and ER developing similar fever+cough symptoms within 6 hours.
+          Possible respiratory infection spread. <strong style="color:#ef4444">High-risk wards: ICU, ER.</strong>
+        </div>
+        <div style="margin-top:10px;padding:8px;background:rgba(239,68,68,0.1);border-radius:6px">
+          <div style="font-size:11px;color:#ef4444;font-weight:600">MANAGEMENT ALERTED · Isolation Protocol Recommended</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">HOSPITAL DIGITAL BRAIN 🧠</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">Similar historical cases found:</div>
+        ${[
+          {case:"Case #2018-445",match:94,outcome:"Recovered in 5 days",action:"Azithromycin + O₂"},
+          {case:"Case #2020-112",match:87,outcome:"ICU stay, recovered",action:"Ventilation support"},
+          {case:"Case #2022-889",match:79,outcome:"Full recovery",action:"Antibiotics + rest"},
+        ].map(c=>`
+        <div style="padding:8px;background:#0d1117;border-radius:6px;margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:#3b82f6;font-weight:600">${c.case}</span>
+            <span class="badge badge-green">${c.match}% match</span>
+          </div>
+          <div style="font-size:11px;color:#64748b">Outcome: ${c.outcome}</div>
+          <div style="font-size:11px;color:#22c55e">Action: ${c.action}</div>
+        </div>`).join('')}
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">CRISIS SIMULATOR 🚨</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">Simulating: Respiratory Outbreak</div>
+        ${[
+          {label:'Hospital Preparedness',val:62,color:'#f59e0b'},
+          {label:'Isolation Beds Available',val:40,color:'#ef4444'},
+          {label:'Staff Coverage',val:75,color:'#22c55e'},
+          {label:'O₂ Supply',val:85,color:'#22c55e'},
+        ].map(s=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px">
+          <span style="color:#94a3b8;flex:1">${s.label}</span>
+          <div class="bar-outer" style="width:80px;margin:0"><div class="bar-inner" style="width:${s.val}%;background:${s.color}"></div></div>
+          <span style="color:${s.color};font-weight:600;width:30px">${s.val}%</span>
+        </div>`).join('')}
+        <div style="margin-top:8px;padding:8px;background:rgba(245,158,11,0.1);border-radius:6px;font-size:11px;color:#f59e0b">Increase isolation capacity before real outbreak occurs</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// MODULE 9 — RESOURCE PREDICTOR
+// ════════════════════════════════════════════════════════
+function renderResources(){
+  return `
+  <div class="section-title"><i class="ti ti-chart-bar" style="color:#3b82f6"></i>AI Hospital Resource Predictor 📈</div>
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">TOMORROW'S FORECAST</div>
+        ${[
+          {label:'ICU Beds Needed',val:'6–7',change:'+1',color:'#f59e0b',icon:'ti-bed'},
+          {label:'Oxygen Demand',val:'340 L/hr',change:'+15%',color:'#3b82f6',icon:'ti-droplet'},
+          {label:'Nurse Shifts',val:'12',change:'+2',color:'#a855f7',icon:'ti-nurse'},
+          {label:'Emergency Admissions',val:'4–6',change:'+1',color:'#ef4444',icon:'ti-ambulance'},
+          {label:'Medications (critical)',val:'High',change:'Stock OK',color:'#22c55e',icon:'ti-pill'},
+        ].map(r=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #0d1117">
+          <div style="display:flex;align-items:center;gap:10px">
+            <i class="ti ${r.icon}" style="color:${r.color};font-size:18px"></i>
+            <span style="font-size:13px;color:#e2e8f0">${r.label}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:14px;font-weight:700;color:${r.color}">${r.val}</div>
+            <div style="font-size:11px;color:#64748b">${r.change} vs today</div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">7-DAY ICU BED TREND</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:80px">
+          ${[5,6,5,7,6,8,7].map((v,i)=>`
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font-size:10px;color:#3b82f6;font-weight:600">${v}</span>
+            <div style="width:100%;border-radius:4px 4px 0 0;background:${v>=7?'#ef4444':v>=6?'#f59e0b':'#3b82f6'};height:${v*10}px"></div>
+            <span style="font-size:9px;color:#475569">${['M','T','W','T','F','S','S'][i]}</span>
+          </div>`).join('')}
+        </div>
+        <div style="font-size:11px;color:#64748b;margin-top:8px;text-align:center">Capacity: 8 beds · Red = near capacity</div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px">PREPARATION RECOMMENDATIONS</div>
+        ${[
+          {t:'Order 2 extra O₂ cylinders',p:'High',c:'#ef4444'},
+          {t:'Schedule +2 nurses for night shift',p:'High',c:'#ef4444'},
+          {t:'Pre-book 1 additional ICU bed',p:'Medium',c:'#f59e0b'},
+          {t:'Restock antibiotics in ICU',p:'Low',c:'#22c55e'},
+        ].map(r=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0d1117;font-size:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:6px;height:6px;border-radius:50%;background:${r.c};flex-shrink:0"></div>
+            <span style="color:#e2e8f0">${r.t}</span>
+          </div>
+          <span class="badge" style="background:${r.c}20;color:${r.c}">${r.p}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// AI CHAT — CareSync GPT (calls Claude API)
+// ════════════════════════════════════════════════════════
+async function sendChat(){
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if(!msg) return;
+
+  const area = document.getElementById('chat-area');
+  area.innerHTML += `<div class="chat-msg" style="display:flex;justify-content:flex-end"><div class="user-bubble chat-bubble">${msg}</div></div>`;
+  input.value = '';
+
+  area.innerHTML += `<div class="chat-msg" id="thinking-msg"><div class="ai-bubble chat-bubble">
+    <div class="thinking"><div class="dot-anim"><span></span><span></span><span></span></div>CareSync AI thinking...</div>
+  </div></div>`;
+  area.scrollTop = area.scrollHeight;
+
+  const patientContext = PATIENTS.map(p=>
+    `Patient ${p.id} (${p.name}, ${p.age}yr, ${p.ward}): SpO₂=${p.spo2}%, HR=${p.hr}, Temp=${p.temp}°C, BP=${p.bp}, RR=${p.rr}, Score=${p.score}/100, Risk=${Math.round(p.risk*100)}%, History=${p.history.join('/')}, Assigned: ${p.nurse}, ${p.doctor}`
+  ).join('\n');
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: `You are CareSync AI, an intelligent hospital assistant embedded in a hospital monitoring dashboard. You have access to real-time patient data. Answer clinical questions concisely and clearly. Use medical terminology. Always cite patient IDs and ward. Format with line breaks for readability. Keep responses under 150 words.
+
+LIVE PATIENT DATA:
+${patientContext}
+
+CURRENTLY SELECTED PATIENT: Patient ${selectedPatient.id} — ${selectedPatient.name}`,
+        messages: [{ role: "user", content: msg }]
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || "Unable to process request.";
+    document.getElementById('thinking-msg').remove();
+    area.innerHTML += `<div class="chat-msg"><div class="ai-bubble chat-bubble">
+      <strong style="color:#3b82f6;font-size:11px;display:block;margin-bottom:4px">CARESYNC AI</strong>
+      ${reply.replace(/\n/g,'<br>')}
+    </div></div>`;
+  } catch(e) {
+    document.getElementById('thinking-msg').remove();
+    area.innerHTML += `<div class="chat-msg"><div class="ai-bubble chat-bubble" style="color:#ef4444">
+      AI service unavailable. Check your connection and try again.
+    </div></div>`;
+  }
+  area.scrollTop = area.scrollHeight;
+}
+
+// ── Init ─────────────────────────────────────────────────
+renderSidebar();
+showTab('dashboard');
+</script>
+</body>
+</html>
